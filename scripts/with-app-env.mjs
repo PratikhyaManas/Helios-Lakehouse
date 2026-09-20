@@ -104,8 +104,11 @@ export function isMainModule(moduleUrl) {
   }
 }
 
+const WINDOWS = process.platform === "win32";
+const SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"];
+
 function resolveCommand(command) {
-  if (process.platform !== "win32") return command;
+  if (!WINDOWS) return command;
 
   const { root, dir, base, ext } = parse(command);
   if (!base || ext) return command;
@@ -118,8 +121,8 @@ function resolveCommand(command) {
 }
 
 function shouldUseShell(command) {
-  if (process.platform !== "win32") return false;
-  if (command.startsWith("\"") || command.includes("/") || command.includes("\\")) {
+  if (!WINDOWS) return false;
+  if (command.startsWith("\"") || /[\\/]/.test(command)) {
     return false;
   }
   return true;
@@ -131,22 +134,26 @@ function main(argv) {
     console.error("usage: node scripts/with-app-env.mjs <command> [args…]");
     process.exit(2);
   }
+
   const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
-  const resolvedCommand = process.platform === "win32" ? resolveCommand(command) : command;
+  const resolvedCommand = WINDOWS ? resolveCommand(command) : command;
   const useShell = shouldUseShell(command);
   const child = spawn(resolvedCommand, args, {
     stdio: "inherit",
     env,
     shell: useShell,
   });
+
   // The dev server is long-running and is stopped by signalling this wrapper.
-  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  for (const signal of SIGNALS) {
     process.on(signal, () => child.kill(signal));
   }
+
   child.on("error", (err) => {
     console.error(`[with-app-env] failed to run ${resolvedCommand}:`, err?.message || err);
     process.exit(127);
   });
+
   child.on("exit", (code, signal) => {
     process.exit(exitStatusFromChild(code, signal));
   });
