@@ -1,0 +1,33 @@
+name: deploy-prod
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_PROD }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q tests/unit
+      - uses: databricks/setup-cli@main
+      - name: Validate
+        run: databricks bundle validate -t prod
+      - name: Deploy
+        run: databricks bundle deploy -t prod --var git_sha=${{ github.sha }}
+      # Deliberately no full_refresh and no automatic training in prod CI.
+      # Serving traffic and Champion alias are changed in a follow-up change.

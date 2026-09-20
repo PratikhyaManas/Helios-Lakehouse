@@ -1,0 +1,7 @@
+*                          @helios-retail/data-platform
+/resources/jobs/           @helios-retail/data-platform
+/resources/pipelines/      @helios-retail/data-engineering
+/resources/ml/             @helios-retail/ml-platform
+/src/helios_lakehouse/ml/  @helios-retail/ml-platform
+/.github/                  @helios-retail/data-platform
+/databricks.yml            @helios-retail/data-platform

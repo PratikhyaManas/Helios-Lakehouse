@@ -1,0 +1,54 @@
+resources:
+  jobs:
+    medallion_orchestrator:
+      name: "[${bundle.target}] Helios medallion orchestrator"
+      max_concurrent_runs: 1
+      timeout_seconds: 14400
+      tags:
+        domain: retail
+        layer: orchestration
+        git_sha: ${var.git_sha}
+      schedule:
+        quartz_cron_expression: "0 15 2 * * ?"
+        timezone_id: America/New_York
+        pause_status: ${var.schedule_pause_status}
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: processing_date
+          default: "{{job.start_time.iso_date}}"
+      queue:
+        enabled: true
+      tasks:
+        - task_key: bronze_refresh
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.bronze_ingest.id}
+            full_refresh: false
+        - task_key: silver_refresh
+          depends_on:
+            - task_key: bronze_refresh
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.silver_conform.id}
+            full_refresh: false
+        - task_key: gold_refresh
+          depends_on:
+            - task_key: silver_refresh
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.gold_marts.id}
+            full_refresh: false
+        - task_key: feature_refresh
+          depends_on:
+            - task_key: gold_refresh
+          run_job_task:
+            job_id: ${resources.jobs.feature_engineering.id}
+            job_parameters:
+              catalog: "{{job.parameters.catalog}}"
+              processing_date: "{{job.parameters.processing_date}}"
+      permissions:
+        - group_name: helios-data-engineers
+          level: CAN_MANAGE_RUN
+        - group_name: helios-data-scientists
+          level: CAN_VIEW

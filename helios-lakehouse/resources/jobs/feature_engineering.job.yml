@@ -1,0 +1,33 @@
+resources:
+  jobs:
+    feature_engineering:
+      name: "[${bundle.target}] Helios demand features"
+      max_concurrent_runs: 1
+      timeout_seconds: 5400
+      tags:
+        domain: retail
+        layer: features
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: processing_date
+          default: "{{job.start_time.iso_date}}"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "3"
+            dependencies:
+              - --editable ${workspace.file_path}
+      tasks:
+        - task_key: build_demand_features
+          environment_key: default
+          spark_python_task:
+            python_file: ../../src/helios_lakehouse/features/demand_features.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--as-of"
+              - "{{job.parameters.processing_date}}"

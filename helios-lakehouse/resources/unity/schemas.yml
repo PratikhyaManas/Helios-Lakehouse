@@ -1,0 +1,22 @@
+resources:
+  schemas:
+    bronze:
+      name: ${var.bronze_schema}
+      catalog_name: ${var.catalog}
+      comment: Raw Autoloader tables for Helios ${bundle.target}
+    silver:
+      name: ${var.silver_schema}
+      catalog_name: ${var.catalog}
+      comment: Conformed, SCD2, and cleansed entities
+    gold:
+      name: ${var.gold_schema}
+      catalog_name: ${var.catalog}
+      comment: Business marts served to BI and ML
+    ml:
+      name: ${var.ml_schema}
+      catalog_name: ${var.catalog}
+      comment: Feature tables, inference, and model artifacts
+    ops:
+      name: ${var.ops_schema}
+      catalog_name: ${var.catalog}
+      comment: Landing volumes and operational datasets

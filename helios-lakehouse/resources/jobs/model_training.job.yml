@@ -1,0 +1,73 @@
+resources:
+  jobs:
+    model_training:
+      name: "[${bundle.target}] Helios demand training"
+      max_concurrent_runs: 1
+      timeout_seconds: 10800
+      tags:
+        domain: retail
+        layer: ml
+        git_sha: ${var.git_sha}
+      schedule:
+        quartz_cron_expression: "0 30 6 ? * SUN"
+        timezone_id: America/New_York
+        pause_status: ${var.schedule_pause_status}
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: experiment
+          default: /Shared/helios/${bundle.target}/demand_forecast
+        - name: wape_gate
+          default: "0.22"
+      environments:
+        - environment_key: ml
+          spec:
+            environment_version: "3"
+            dependencies:
+              - --editable ${workspace.file_path}
+              - lightgbm==4.5.0
+              - scikit-learn==1.5.2
+              - mlflow==2.19.0
+      tasks:
+        - task_key: train
+          environment_key: ml
+          spark_python_task:
+            python_file: ../../src/helios_lakehouse/ml/train_demand.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--experiment"
+              - "{{job.parameters.experiment}}"
+        - task_key: evaluate
+          depends_on:
+            - task_key: train
+          environment_key: ml
+          spark_python_task:
+            python_file: ../../src/helios_lakehouse/ml/evaluate.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--wape-gate"
+              - "{{job.parameters.wape_gate}}"
+        - task_key: gate
+          depends_on:
+            - task_key: evaluate
+          condition_task:
+            op: EQUAL_TO
+            left: "{{tasks.evaluate.values.promote}}"
+            right: "true"
+        - task_key: register
+          depends_on:
+            - task_key: gate
+              outcome: "true"
+          environment_key: ml
+          spark_python_task:
+            python_file: ../../src/helios_lakehouse/ml/register.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--alias"
+              - Challenger

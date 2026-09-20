@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    file_arrival_ingest:
+      name: "[${bundle.target}] Helios POS file-arrival ingest"
+      max_concurrent_runs: 1
+      timeout_seconds: 3600
+      tags:
+        domain: retail
+        layer: ingest
+      trigger:
+        pause_status: ${var.schedule_pause_status}
+        file_arrival:
+          url: ${var.landing_volume}/pos
+          min_time_between_triggers_seconds: 300
+          wait_after_last_change_seconds: 60
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+      tasks:
+        - task_key: bronze_pos_update
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.bronze_ingest.id}
+            full_refresh: false

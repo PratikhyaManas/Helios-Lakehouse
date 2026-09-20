@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Helios Lakehouse",
+      "hasCanvas": false,
+      "bodyTextLen": 2992,
+      "bodyTextHash": "f4b7b38a3545d2df5f43af21812f2d73fb3ebd5663e4152cb8f901eaa778774e",
+      "bodyTextPrefix": "Skip to content Helios Lakehouse CONTROL ROOM Overview Resources",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Helios Lakehouse",
+      "hasCanvas": false,
+      "bodyTextLen": 2860,
+      "bodyTextHash": "670283e9c8c364a58a4e889f7a952cf21bdb54f5a3a2fa1098b077c25730beff",
+      "bodyTextPrefix": "Skip to content Helios dev staging prod Overview Resources Score",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

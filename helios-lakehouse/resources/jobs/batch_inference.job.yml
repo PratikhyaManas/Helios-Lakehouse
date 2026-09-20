@@ -1,0 +1,43 @@
+resources:
+  jobs:
+    batch_inference:
+      name: "[${bundle.target}] Helios demand batch inference"
+      max_concurrent_runs: 1
+      timeout_seconds: 7200
+      tags:
+        domain: retail
+        layer: ml
+      schedule:
+        quartz_cron_expression: "0 0 8 * * ?"
+        timezone_id: America/New_York
+        pause_status: ${var.schedule_pause_status}
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: alias
+          default: Champion
+        - name: horizon_weeks
+          default: "12"
+      environments:
+        - environment_key: ml
+          spec:
+            environment_version: "3"
+            dependencies:
+              - --editable ${workspace.file_path}
+              - lightgbm==4.5.0
+              - mlflow==2.19.0
+      tasks:
+        - task_key: score
+          environment_key: ml
+          spark_python_task:
+            python_file: ../../src/helios_lakehouse/ml/infer_batch.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--alias"
+              - "{{job.parameters.alias}}"
+              - "--horizon-weeks"
+              - "{{job.parameters.horizon_weeks}}"

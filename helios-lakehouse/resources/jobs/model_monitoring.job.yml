@@ -1,0 +1,56 @@
+resources:
+  jobs:
+    model_monitoring:
+      name: "[${bundle.target}] Helios demand monitor"
+      max_concurrent_runs: 1
+      timeout_seconds: 2400
+      tags:
+        domain: retail
+        layer: mlops
+      schedule:
+        quartz_cron_expression: "0 0 15 * * ?"
+        timezone_id: UTC
+        pause_status: ${var.schedule_pause_status}
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: wape_threshold
+          default: "0.28"
+        - name: windows
+          default: "7"
+      environments:
+        - environment_key: ml
+          spec:
+            environment_version: "3"
+            dependencies:
+              - --editable ${workspace.file_path}
+      tasks:
+        - task_key: check_wape
+          environment_key: ml
+          spark_python_task:
+            python_file: ../../src/helios_lakehouse/ml/evaluate.py
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--wape-gate"
+              - "{{job.parameters.wape_threshold}}"
+              - "--mode"
+              - monitor
+              - "--windows"
+              - "{{job.parameters.windows}}"
+        - task_key: drifted
+          depends_on:
+            - task_key: check_wape
+          condition_task:
+            op: EQUAL_TO
+            left: "{{tasks.check_wape.values.promote}}"
+            right: "false"
+        - task_key: retrain
+          depends_on:
+            - task_key: drifted
+              outcome: "true"
+          run_job_task:
+            job_id: ${resources.jobs.model_training.id}

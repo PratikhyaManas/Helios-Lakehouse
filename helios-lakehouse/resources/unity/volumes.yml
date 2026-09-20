@@ -1,0 +1,14 @@
+resources:
+  volumes:
+    landing:
+      name: landing
+      catalog_name: ${var.catalog}
+      schema_name: ${var.ops_schema}
+      volume_type: MANAGED
+      comment: Autoloader source for POS, ecommerce, inventory, and CRM drops
+    features:
+      name: features
+      catalog_name: ${var.catalog}
+      schema_name: ${var.ml_schema}
+      volume_type: MANAGED
+      comment: Offline feature snapshots and training folds

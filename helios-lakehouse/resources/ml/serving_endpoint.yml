@@ -1,0 +1,25 @@
+resources:
+  model_serving_endpoints:
+    helios_demand:
+      name: helios-demand-${bundle.target}
+      config:
+        served_entities:
+          - name: demand-champion
+            entity_name: ${var.catalog}.${var.ml_schema}.demand_forecast
+            entity_version: "1"
+            workload_size: Small
+            scale_to_zero_enabled: true
+        traffic_config:
+          routes:
+            - served_model_name: demand-champion
+              traffic_percentage: 100
+      tags:
+        - key: domain
+          value: retail
+        - key: env
+          value: ${bundle.target}
+      permissions:
+        - group_name: helios-ml-engineers
+          level: CAN_MANAGE
+        - group_name: helios-data-scientists
+          level: CAN_QUERY

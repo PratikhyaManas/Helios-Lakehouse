@@ -1,0 +1,33 @@
+name: deploy-staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_STAGING }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q tests/unit
+      - uses: databricks/setup-cli@main
+      - name: Validate
+        run: databricks bundle validate -t staging
+      - name: Deploy
+        run: databricks bundle deploy -t staging --var git_sha=${{ github.sha }}
+      - name: Integration training (Challenger)
+        run: databricks bundle run model_training -t staging

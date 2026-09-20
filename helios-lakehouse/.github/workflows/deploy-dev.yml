@@ -1,0 +1,32 @@
+name: deploy-dev
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST_DEV }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: pytest -q tests/unit
+      - uses: databricks/setup-cli@main
+      - name: Deploy
+        run: databricks bundle deploy -t dev --var git_sha=${{ github.sha }}
+      - name: Smoke bronze
+        if: github.event_name == 'workflow_dispatch'
+        run: databricks bundle run bronze_ingest -t dev

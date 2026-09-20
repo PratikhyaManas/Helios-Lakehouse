@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "helios-lakehouse"
+version = "1.4.0"
+description = "Helios Retail lakehouse — medallion pipelines, jobs, and demand ML"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Helios Data Platform" }]
+dependencies = [
+  "mlflow>=2.19,<3",
+  "scikit-learn>=1.5,<1.7",
+  "lightgbm>=4.5,<5",
+  "pandas>=2.2,<3",
+  "numpy>=1.26,<3",
+  "pyarrow>=17,<20",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.9",
+  "pre-commit>=4.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+pythonpath = ["src"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

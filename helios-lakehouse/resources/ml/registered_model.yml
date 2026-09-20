@@ -1,0 +1,18 @@
+resources:
+  registered_models:
+    demand_forecast:
+      name: demand_forecast
+      catalog_name: ${var.catalog}
+      schema_name: ${var.ml_schema}
+      comment: Weekly store-SKU demand (LightGBM). Aliases Champion and Challenger.
+      grants:
+        - principal: helios-ml-engineers
+          privileges:
+            - EXECUTE
+            - APPLY_TAG
+        - principal: helios-data-scientists
+          privileges:
+            - EXECUTE
+        - principal: helios-serving-sp
+          privileges:
+            - EXECUTE

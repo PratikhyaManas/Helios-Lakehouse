@@ -1,0 +1,29 @@
+resources:
+  pipelines:
+    gold_marts:
+      name: helios-gold-${bundle.target}
+      catalog: ${var.catalog}
+      schema: ${var.gold_schema}
+      serverless: true
+      photon: true
+      channel: CURRENT
+      continuous: false
+      libraries:
+        - glob:
+            include: ../../src/helios_lakehouse/gold/**
+        - glob:
+            include: ../../src/helios_lakehouse/common/**
+      configuration:
+        helios.env: ${bundle.target}
+        helios.catalog: ${var.catalog}
+        helios.silver_schema: ${var.silver_schema}
+        helios.git_sha: ${var.git_sha}
+      notifications:
+        - email_recipients:
+            - ${var.notification_email}
+          alerts:
+            - on-update-failure
+      tags:
+        domain: retail
+        layer: gold
+        bundle: ${bundle.name}

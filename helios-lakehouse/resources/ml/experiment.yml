@@ -1,0 +1,9 @@
+resources:
+  experiments:
+    demand_forecast:
+      name: /Shared/helios/${bundle.target}/demand_forecast
+      description: Store-SKU weekly demand. LightGBM, WAPE gate 0.22.
+      tags:
+        domain: retail
+        problem: forecasting
+        bundle: ${bundle.name}

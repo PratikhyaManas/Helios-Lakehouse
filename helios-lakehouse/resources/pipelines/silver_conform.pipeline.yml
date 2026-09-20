@@ -1,0 +1,29 @@
+resources:
+  pipelines:
+    silver_conform:
+      name: helios-silver-${bundle.target}
+      catalog: ${var.catalog}
+      schema: ${var.silver_schema}
+      serverless: true
+      photon: true
+      channel: CURRENT
+      continuous: false
+      libraries:
+        - glob:
+            include: ../../src/helios_lakehouse/silver/**
+        - glob:
+            include: ../../src/helios_lakehouse/common/**
+      configuration:
+        helios.env: ${bundle.target}
+        helios.catalog: ${var.catalog}
+        helios.bronze_schema: ${var.bronze_schema}
+        helios.git_sha: ${var.git_sha}
+      notifications:
+        - email_recipients:
+            - ${var.notification_email}
+          alerts:
+            - on-update-failure
+      tags:
+        domain: retail
+        layer: silver
+        bundle: ${bundle.name}

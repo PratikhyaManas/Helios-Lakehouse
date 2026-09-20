@@ -1,0 +1,93 @@
+# Equivalent promotion path for Azure DevOps shops.
+# Service connections must use federated credentials (no PATs).
+
+trigger:
+  branches:
+    include: [develop, staging, main]
+
+pr:
+  branches:
+    include: [develop, staging, main]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  pythonVersion: "3.11"
+
+stages:
+  - stage: validate
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    jobs:
+      - job: lint_test_validate
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+          - script: pip install -e ".[dev]" && ruff check src tests && pytest -q tests/unit
+            displayName: Lint and unit tests
+          - script: |
+              curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+              databricks bundle validate -t dev
+            displayName: Bundle validate
+            env:
+              DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
+              DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID)
+              ARM_CLIENT_ID: $(DATABRICKS_CLIENT_ID)
+              DATABRICKS_AUTH_TYPE: azure-client-secret
+
+  - stage: deploy_dev
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: dev
+        environment: helios-dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+                    databricks bundle deploy -t dev --var git_sha=$(Build.SourceVersion)
+                  env:
+                    DATABRICKS_HOST: $(DATABRICKS_HOST_DEV)
+                    DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID)
+                    DATABRICKS_AUTH_TYPE: azure-client-secret
+
+  - stage: deploy_staging
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/staging'))
+    jobs:
+      - deployment: staging
+        environment: helios-staging
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+                    databricks bundle deploy -t staging --var git_sha=$(Build.SourceVersion)
+                    databricks bundle run model_training -t staging
+                  env:
+                    DATABRICKS_HOST: $(DATABRICKS_HOST_STAGING)
+                    DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID)
+                    DATABRICKS_AUTH_TYPE: azure-client-secret
+
+  - stage: deploy_prod
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: prod
+        environment: helios-prod
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - script: |
+                    curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+                    databricks bundle validate -t prod
+                    databricks bundle deploy -t prod --var git_sha=$(Build.SourceVersion)
+                  env:
+                    DATABRICKS_HOST: $(DATABRICKS_HOST_PROD)
+                    DATABRICKS_CLIENT_ID: $(DATABRICKS_CLIENT_ID)
+                    DATABRICKS_AUTH_TYPE: azure-client-secret

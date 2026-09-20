@@ -1,0 +1,29 @@
+resources:
+  pipelines:
+    bronze_ingest:
+      name: helios-bronze-${bundle.target}
+      catalog: ${var.catalog}
+      schema: ${var.bronze_schema}
+      serverless: true
+      photon: true
+      channel: CURRENT
+      continuous: false
+      libraries:
+        - glob:
+            include: ../../src/helios_lakehouse/bronze/**
+        - glob:
+            include: ../../src/helios_lakehouse/common/**
+      configuration:
+        helios.env: ${bundle.target}
+        helios.catalog: ${var.catalog}
+        helios.landing: ${var.landing_volume}
+        helios.git_sha: ${var.git_sha}
+      notifications:
+        - email_recipients:
+            - ${var.notification_email}
+          alerts:
+            - on-update-failure
+      tags:
+        domain: retail
+        layer: bronze
+        bundle: ${bundle.name}
