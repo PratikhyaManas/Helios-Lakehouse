@@ -83,6 +83,22 @@ test("the wrapped command runs with the app env applied", async () => {
   assert.equal(stdout, "false");
 });
 
+test("the wrapper resolves .cmd commands on Windows", async () => {
+  if (process.platform !== "win32") {
+    return;
+  }
+
+  const tmp = mkdtempSync(join(tmpdir(), "app-env-win-"));
+  const exe = join(tmp, "vite.cmd");
+  writeFileSync(exe, "@echo off\r\n echo %VITE_AUTH_ENABLED%\r\n");
+
+  const { stdout } = await execFileAsync(process.execPath, [WRAPPER, "vite"], {
+    env: { ...process.env, PATH: `${tmp};${process.env.PATH ?? ""}`, VITE_AUTH_ENABLED: "false" },
+  });
+
+  assert.equal(stdout.trim(), "false");
+});
+
 test("the wrapped command sees an explicit override, not the file value", async () => {
   const { stdout } = await execFileAsync(
     process.execPath,
@@ -114,6 +130,10 @@ test("a signal-killed command is never reported as success", async () => {
 });
 
 test("the CLI still runs when invoked through a symlinked path", async () => {
+  if (process.platform === "win32") {
+    return;
+  }
+
   // node realpaths import.meta.url but not process.argv[1], so a raw comparison
   // turns the wrapper into a no-op that exits 0 without starting anything.
   const link = join(mkdtempSync(join(tmpdir(), "app-env-link-")), "scripts");

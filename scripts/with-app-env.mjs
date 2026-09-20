@@ -22,7 +22,7 @@
 import { spawn } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
 import { constants as osConstants } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, parse } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const APP_ENV_REL_PATH = ".grok/app-env.json";
@@ -104,6 +104,27 @@ export function isMainModule(moduleUrl) {
   }
 }
 
+function resolveCommand(command) {
+  if (process.platform !== "win32") return command;
+
+  const { root, dir, base, ext } = parse(command);
+  if (!base || ext) return command;
+
+  if (root || dir) {
+    return join(dir, `${base}.cmd`);
+  }
+
+  return `${base}.cmd`;
+}
+
+function shouldUseShell(command) {
+  if (process.platform !== "win32") return false;
+  if (command.startsWith("\"") || command.includes("/") || command.includes("\\")) {
+    return false;
+  }
+  return true;
+}
+
 function main(argv) {
   const [command, ...args] = argv;
   if (!command) {
@@ -111,13 +132,19 @@ function main(argv) {
     process.exit(2);
   }
   const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
-  const child = spawn(command, args, { stdio: "inherit", env });
+  const resolvedCommand = process.platform === "win32" ? resolveCommand(command) : command;
+  const useShell = shouldUseShell(command);
+  const child = spawn(resolvedCommand, args, {
+    stdio: "inherit",
+    env,
+    shell: useShell,
+  });
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => child.kill(signal));
   }
   child.on("error", (err) => {
-    console.error(`[with-app-env] failed to run ${command}:`, err?.message || err);
+    console.error(`[with-app-env] failed to run ${resolvedCommand}:`, err?.message || err);
     process.exit(127);
   });
   child.on("exit", (code, signal) => {
