@@ -1,36 +1,48 @@
 # Helios Lakehouse
 
-Helios Lakehouse is the retail intelligence platform for Helios Retail Group, bringing together ingestion, transformation, forecasting, and monitoring across the data lifecycle. This workspace includes both:
+![Status](https://img.shields.io/badge/status-ready--for-demo-brightgreen)
+![Node](https://img.shields.io/badge/node-22%2B-339933)
+![Databricks](https://img.shields.io/badge/databricks-asset%20bundle-FF3621)
+![Platform](https://img.shields.io/badge/platform-retail%20intelligence-blue)
 
-- the local interactive product/workspace preview for the Helios Lakehouse experience
-- the operational Databricks Asset Bundle implementation under [helios-lakehouse/README.md](helios-lakehouse/README.md)
+Helios Lakehouse is a retail intelligence platform for Helios Retail Group. It combines operational data engineering, forecasting, monitoring, and a browser-based product experience into one repository.
 
-## What this repo contains
+This workspace contains two connected layers:
 
-This repository is organized as a practical working environment for the Helios Lakehouse platform:
+- a local interactive UI and dashboard for viewing the platform
+- the production-ready Databricks Lakehouse implementation in [helios-lakehouse/README.md](helios-lakehouse/README.md)
 
-- a browser-based demo / operational dashboard for retail scenario planning
-- a Lakehouse architecture and metadata model for operational analytics
-- a nested Databricks implementation for medallion pipelines, jobs, ML, and serving
+## At a glance
 
-## Helios Lakehouse architecture
+| Capability | Status |
+| --- | --- |
+| Retail data platform | ✅ Ready |
+| Browser-based demo experience | ✅ Included |
+| Databricks Lakehouse implementation | ✅ Included |
+| Medallion data architecture | ✅ Built in |
+| Forecasting and model serving | ✅ Supported |
+| Dev → staging → prod promotion flow | ✅ Included |
 
-The core platform follows a medallion design:
-
-- Bronze: raw ingest and source consolidation
-- Silver: standardized and cleaned operational datasets
-- Gold: curated retail datasets for analytics and decisioning
-- ML: demand forecasting and quality gate evaluation
-- Serving: registered model and inference endpoints
-
-This supports central retail capabilities such as:
+Helios Lakehouse helps teams turn retail data into operational decisions across:
 
 - store demand forecasting
-- file-arrival ingestion workflows
-- nightly orchestration jobs
-- data quality checks and monitors
-- model registration and serving
-- CI/CD promotion through dev, staging, and production targets
+- inventory and supply planning
+- nightly orchestration and ingestion
+- data quality validation
+- model serving and monitoring
+- promotion across dev, staging, and production environments
+
+## Architecture overview
+
+<img src="docs/helios-lakehouse-architecture.svg" alt="Helios Lakehouse architecture diagram" width="100%" />
+
+### Medallion flow
+
+- Bronze: raw ingest and source consolidation
+- Silver: cleaned and standardized datasets
+- Gold: business-ready retail datasets for analytics and decisions
+- ML: demand forecasting and model evaluation
+- Serving: registered models and inference endpoints
 
 ## Repository layout
 
@@ -39,6 +51,7 @@ This supports central retail capabilities such as:
 ├── README.md
 ├── package.json
 ├── vite.config.ts
+├── startup.sh
 ├── src/
 │   ├── components/
 │   ├── lib/
@@ -48,7 +61,8 @@ This supports central retail capabilities such as:
 ├── public/
 ├── server/
 ├── migrations/
-├── startup.sh
+├── docs/
+│   └── helios-lakehouse-architecture.svg
 ├── helios-lakehouse/
 │   ├── README.md
 │   ├── databricks.yml
@@ -57,31 +71,29 @@ This supports central retail capabilities such as:
 │   ├── tests/
 │   ├── azure-pipelines.yml
 │   └── pyproject.toml
-└── artifacts/
+├── artifacts/
+└── screenshots/
 ```
 
-## Working with the app preview
+## Quick start
 
-### Prerequisites
+### 1) Run the local app preview
+
+Prerequisites:
 
 - Node.js 22+
 - npm
 
-### Install dependencies
+Install and start:
 
 ```bash
 npm install
-```
-
-### Start the local app
-
-```bash
 npm run dev
 ```
 
-The preview app binds to port 8080 on `0.0.0.0`.
+The local app is served on port 8080.
 
-### Build and validation
+### 2) Validate the repo
 
 ```bash
 npm run build
@@ -89,17 +101,9 @@ npm run typecheck
 npm test
 ```
 
-## Working with the Databricks implementation
+### 3) Work with the Databricks implementation
 
-The production-grade Lakehouse implementation is housed in [helios-lakehouse/README.md](helios-lakehouse/README.md). That project includes:
-
-- Databricks Asset Bundle configuration
-- pipeline and job resources
-- Unity Catalog objects and monitoring
-- ML training and serving configuration
-- promotion flows across dev, staging, and prod
-
-Typical setup for that subproject:
+The operational Lakehouse implementation lives in [helios-lakehouse/README.md](helios-lakehouse/README.md).
 
 ```bash
 cd helios-lakehouse
@@ -110,21 +114,30 @@ make test
 make validate
 ```
 
-## Deployment and promotion model
+## Deployment model
 
-The Helios Lakehouse process is designed for governed software delivery:
+The platform is designed for governed delivery:
 
-1. feature work is validated in a dev bundle
-2. staging validates integration and challenger model behavior
-3. main deploys reviewed, production-ready changes
-4. quality gates protect serving and retraining flows
+1. development validates feature work and bundle changes
+2. staging checks integration and challenger model behavior
+3. production applies reviewed, approved changes
+4. quality gates protect serving, drift monitoring, and retraining
+
+## Typical user journey
+
+- ingest operational data from stores and digital touchpoints
+- clean and standardize it into Silver tables
+- publish curated Gold datasets for analytics
+- train demand forecasting models and evaluate quality gates
+- promote approved changes through dev → staging → prod
+- monitor service quality and retraining signals over time
 
 ## Notes
 
-- The local browser app is meant for workspace exploration and product visualization.
-- The source-of-truth operational lakehouse implementation lives in [helios-lakehouse/README.md](helios-lakehouse/README.md).
-- Environment and deployment credentials should never be committed to source control.
+- The browser app is best for exploration, demos, and product visualization.
+- The source-of-truth Lakehouse implementation lives in [helios-lakehouse/README.md](helios-lakehouse/README.md).
+- Never commit credentials, tokens, or deployment secrets to source control.
 
 ## License
 
-This workspace is intended for Helios Lakehouse development and demonstration use. Please follow the repository ownership and environment-specific deployment policies before production use.
+This workspace is intended for Helios Lakehouse development and demonstration use. Follow repository ownership and environment-specific deployment policies before production use.

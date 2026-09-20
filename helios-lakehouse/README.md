@@ -1,50 +1,55 @@
 # Helios Lakehouse
 
-Enterprise **Databricks Asset Bundle** for Helios Retail Group — 1,400 stores plus ecommerce. One repository declares the jobs, Lakeflow pipelines, Unity Catalog objects, MLflow experiment, registered model, serving endpoint, quality monitors, and the CI that promotes them.
+Helios Lakehouse is the Databricks Asset Bundle for Helios Retail Group. It brings together ingestion, transformation, forecasting, quality monitoring, and model serving in a single infrastructure-as-code workflow.
 
-This is the working example behind *Databricks Asset Bundles + CI/CD: Infra as Code for Jobs, Pipelines & ML in One Repo*.
+This project is the operational implementation behind the retail intelligence platform and supports the full delivery path from raw data to production serving.
 
-## What is in the box
+## What this bundle includes
 
-| Layer | How it ships |
+| Area | What it does |
 | --- | --- |
-| Bronze / silver / gold | Spark Declarative Pipelines (`resources/pipelines`, `src/helios_lakehouse/{bronze,silver,gold}`) |
-| Nightly DAG + file-arrival ingest | Lakeflow Jobs (`resources/jobs`) |
-| Demand forecast | Feature job, training job with a WAPE gate, batch inference, drift monitor |
-| Registry + serving | Unity Catalog registered model + serverless endpoint (prod) |
-| Data quality | Lakeflow expectations + Lakehouse Monitoring on gold and inference |
-| Delivery | GitHub Actions with OIDC; Azure DevOps YAML included |
+| Bronze / Silver / Gold | Spark declarative pipelines for raw, standardized, and curated retail data |
+| Ingestion | file-arrival and scheduled ingest jobs |
+| Forecasting | feature engineering, training, evaluation, and batch inference |
+| Model serving | Unity Catalog registration and production serving endpoint |
+| Quality | Lakeflow expectations, drift checks, and monitoring |
+| Delivery | GitHub and Azure DevOps promotion workflows |
 
-```
-feature/*  →  develop (dev deploy)
-                 ↓
-              staging (integration + Challenger)
-                 ↓
-               main  (reviewed prod deploy)
+## Architecture at a glance
+
+<img src="../docs/helios-lakehouse-architecture.svg" alt="Helios Lakehouse architecture diagram" width="100%" />
+
+### Promotion flow
+
+```text
+feature/*  →  develop  →  staging  →  main
+                  (dev deploy)   (challenger)   (prod)
 ```
 
-## Layout
+## Repository layout
 
-```
-databricks.yml          # bundle, variables, three targets
-resources/              # jobs, pipelines, UC, ML, monitors
-src/helios_lakehouse/   # Python that the resources run
-tests/unit/             # no Spark required
-.github/workflows/      # validate, deploy-dev, staging, prod
-azure-pipelines.yml     # same promotion path on Azure DevOps
+```text
+databricks.yml          # bundle configuration and environment targets
+resources/              # jobs, pipelines, UC objects, monitors, and ML resources
+src/helios_lakehouse/   # Python code executed by jobs and pipelines
+tests/unit/             # unit tests without Spark dependency
+.github/workflows/      # CI and deployment automation
+azure-pipelines.yml     # Azure DevOps promotion pipeline
 ```
 
 ## Prerequisites
 
+Before the first deployment, make sure you have:
+
 - Databricks CLI `>= 0.250.0`
 - Python 3.11
-- A workspace with Unity Catalog
-- A service principal per shared target (staging, prod)
-- GitHub OIDC federation (or Azure DevOps federated credentials)
+- a Databricks workspace with Unity Catalog enabled
+- a service principal for staging and production
+- GitHub OIDC federation or Azure DevOps federated credentials
 
-Replace every `REPLACE_ME_*` host, warehouse ID, and principal UUID in `databricks.yml` before the first deploy.
+Update every `REPLACE_ME_*` host, warehouse ID, and principal UUID in `databricks.yml` before deploying.
 
-## Local loop
+## Local validation loop
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -55,37 +60,46 @@ make deploy-dev        # personal-prefixed copies, schedules paused
 databricks bundle run bronze_ingest -t dev
 ```
 
-Development mode prefixes resource names with `[dev <you>]` and pauses jobs. You cannot accidentally share a cluster or unpause a prod schedule from a laptop.
+Development mode prefixes resource names with `[dev <you>]` and pauses schedules, which helps keep laptop-based work safe and isolated.
 
-## CI/CD
+## CI/CD workflow
 
-| Workflow | Trigger | Target | Notes |
+| Workflow | Trigger | Target | Purpose |
 | --- | --- | --- | --- |
-| `ci-validate.yml` | pull request | validate against `dev` | ruff, pytest, `bundle validate` |
-| `deploy-dev.yml` | push to `develop` | `dev` | deploy + optional smoke run |
-| `deploy-staging.yml` | push to `staging` | `staging` | deploy, run training as Challenger |
-| `deploy-prod.yml` | push to `main` | `prod` | GitHub Environment approval required |
+| `ci-validate.yml` | pull request | `dev` | lint, test, and bundle validation |
+| `deploy-dev.yml` | push to `develop` | `dev` | deploy development bundle |
+| `deploy-staging.yml` | push to `staging` | `staging` | integration and challenger validation |
+| `deploy-prod.yml` | push to `main` | `prod` | approved production rollout |
 
-Authentication is **OIDC**. Repository variables:
+Authentication uses **OIDC**. Required repository variables include:
 
 - `DATABRICKS_HOST_DEV` / `_STAGING` / `_PROD`
-- `DATABRICKS_CLIENT_ID` (per environment if you split principals)
+- `DATABRICKS_CLIENT_ID` for the relevant environment
 
-No `DATABRICKS_TOKEN` in GitHub secrets.
+Avoid storing `DATABRICKS_TOKEN` in GitHub secrets.
 
 ## Promotion rules
 
-1. Pipelines never `full_refresh` gold in production from CI.
-2. The training job registers a model version only when holdout WAPE ≤ 0.22.
-3. Staging writes alias `Challenger`. Prod serving pins `Champion`.
-4. The monitor job can trigger a retrain; it cannot deploy serving.
+1. Gold pipelines do not run a `full_refresh` in production from CI.
+2. Training registers a new model version only when holdout WAPE is within the approved threshold.
+3. Staging writes the `Challenger` alias while production serving pins the `Champion` alias.
+4. Monitor jobs can trigger retraining, but they do not deploy serving changes directly.
 
-## Identity
+## Identity and permissions
 
-- **dev** `run_as` the deploying user (personal copies).
-- **staging / prod** `run_as` the target service principal.
-- Bundle permissions: platform admins `CAN_MANAGE`, engineers `CAN_RUN`, scientists `CAN_VIEW`.
+- **dev** uses the deploying user as `run_as` for personal copies
+- **staging / prod** use the shared service principal
+- bundle permissions are separated by role: platform admins, engineers, and scientists
+
+## Typical usage
+
+- ingest raw store and ecommerce data
+- standardize it into Silver tables
+- publish Gold datasets for analytics and decision support
+- train and validate demand forecasting models
+- promote approved versions across the deployment lifecycle
+- monitor quality and retraining signals in production
 
 ## License
 
-Internal Helios Retail Group example. Adapt freely for your own lakehouse.
+Internal Helios Retail Group example. Adapt freely for your own lakehouse implementation.
